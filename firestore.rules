@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: posts
+    // Document ID: auto-generated
+    // Fields:
+    //   - author: map (id: string, name: string, avatar: string)
+    //   - content: string (max 1000 chars)
+    //   - timestamp: string
+    //   - likes: number
+    //   - comments: number
+    //   - image: string (optional)
+    //   - createdAt: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidString(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !('image' in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    function isValidUserMap(userMap) {
+      return userMap is map &&
+             userMap.keys().hasAll(['id', 'name', 'avatar']) &&
+             userMap.id is string && userMap.id == request.auth.uid &&
+             userMap.name is string && userMap.name.size() > 0 && userMap.name.size() <= 100 &&
+             userMap.avatar is string && userMap.avatar.size() <= 500;
+    }
+
+    function isValidPost() {
+      return hasRequiredFields(['author', 'content', 'timestamp', 'likes', 'comments', 'createdAt']) &&
+             hasOnlyAllowedFields(['author', 'content', 'timestamp', 'likes', 'comments', 'image', 'createdAt']) &&
+             isValidUserMap(request.resource.data.author) &&
+             isValidString('content', 1, 2000) &&
+             isValidString('timestamp', 1, 100) &&
+             request.resource.data.likes is number && request.resource.data.likes >= 0 &&
+             request.resource.data.comments is number && request.resource.data.comments >= 0 &&
+             isValidOptionalString('image', 1, 1000) &&
+             request.resource.data.createdAt == request.time;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPost();
+      allow update: if false; // Not implemented in app yet
+      allow delete: if false; // Not implemented in app yet
+    }
+  }
+}

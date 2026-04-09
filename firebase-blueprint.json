@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The user's ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name"
+        },
+        "avatar": {
+          "type": "string",
+          "description": "The user's avatar URL"
+        }
+      },
+      "required": ["id", "name", "avatar"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A post created by a user",
+      "type": "object",
+      "properties": {
+        "author": {
+          "$ref": "#/entities/User",
+          "description": "The author of the post"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the post"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "A string representation of when the post was created"
+        },
+        "likes": {
+          "type": "number",
+          "description": "Number of likes"
+        },
+        "comments": {
+          "type": "number",
+          "description": "Number of comments"
+        },
+        "image": {
+          "type": "string",
+          "description": "Optional image URL"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "Firestore server timestamp"
+        }
+      },
+      "required": ["author", "content", "timestamp", "likes", "comments", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": {
+        "$ref": "#/entities/Post"
+      },
+      "description": "Collection of all user posts"
+    }
+  }
+}
